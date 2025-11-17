@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传作品 - 光影分享</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-brand">
+                <h1>📷 光影分享</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="upload.html" class="active">上传作品</a></li>
+                <li><a href="ai-feedback.html">AI评价</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main">
+        <section class="upload-section">
+            <div class="upload-container">
+                <h2>分享你的摄影作品</h2>
+                <form id="uploadForm" class="upload-form">
+                    <div class="form-group">
+                        <label for="photoFile">选择照片</label>
+                        <div class="file-upload" id="fileUpload">
+                            <input type="file" id="photoFile" accept="image/*" required>
+                            <div class="file-upload-label">
+                                <span>📷 点击或拖拽上传照片</span>
+                                <small>支持 JPG, PNG, GIF 格式，最大 10MB</small>
+                            </div>
+                        </div>
+                        <div class="image-preview" id="imagePreview" style="display: none;">
+                            <img id="previewImg" src="" alt="预览">
+                            <button type="button" class="remove-btn" id="removeImage">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">作品标题</label>
+                        <input type="text" id="title" name="title" required placeholder="给你的作品起个标题">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">作品分类</label>
+                        <select id="category" name="category" required>
+                            <option value="">请选择分类</option>
+                            <option value="landscape">风光摄影</option>
+                            <option value="portrait">人像摄影</option>
+                            <option value="street">街拍摄影</option>
+                            <option value="macro">微距摄影</option>
+                            <option value="wildlife">野生动物</option>
+                            <option value="architecture">建筑摄影</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">作品描述</label>
+                        <textarea id="description" name="description" rows="4" placeholder="分享一下拍摄心得、故事或技巧..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cameraInfo">拍摄参数</label>
+                        <div class="camera-info-grid">
+                            <input type="text" id="camera" name="camera" placeholder="相机型号">
+                            <input type="text" id="lens" name="lens" placeholder="镜头">
+                            <input type="text" id="focal" name="focal" placeholder="焦距">
+                            <input type="text" id="aperture" name="aperture" placeholder="光圈">
+                            <input type="text" id="shutter" name="shutter" placeholder="快门">
+                            <input type="text" id="iso" name="iso" placeholder="ISO">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">拍摄地点</label>
+                        <input type="text" id="location" name="location" placeholder="照片拍摄地点">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            <span class="btn-text">发布作品</span>
+                            <span class="btn-loading" style="display: none;">发布中...</span>
+                        </button>
+                        <button type="button" class="cancel-btn" onclick="history.back()">取消</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 光影分享. 让每个瞬间都值得记录</p>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/upload.js"></script>
+</body>
+</html>

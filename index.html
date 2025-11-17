@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光影分享 - 摄影作品社区</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-brand">
+                <h1>📷 光影分享</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">首页</a></li>
+                <li><a href="upload.html">上传作品</a></li>
+                <li><a href="ai-feedback.html">AI评价</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main">
+        <section class="hero">
+            <div class="hero-content">
+                <h2>分享你的摄影作品</h2>
+                <p>与摄影爱好者交流，获得AI专业评价，提升摄影技巧</p>
+                <a href="upload.html" class="cta-button">开始分享</a>
+            </div>
+        </section>
+
+        <section class="gallery-section">
+            <div class="section-header">
+                <h3>最新作品</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="landscape">风光</button>
+                    <button class="filter-btn" data-filter="portrait">人像</button>
+                    <button class="filter-btn" data-filter="street">街拍</button>
+                </div>
+            </div>
+            
+            <div class="gallery" id="photoGallery">
+                <!-- 动态加载照片 -->
+            </div>
+            
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>加载中...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 光影分享. 让每个瞬间都值得记录</p>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

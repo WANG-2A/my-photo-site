@@ -1,0 +1,43 @@
+{
+  "name": "my-photo-site",
+  "version": "1.0.0",
+  "description": "光影分享 - 摄影作品分享与AI评价网站",
+  "main": "index.html",
+  "scripts": {
+    "build": "npm run copy-files",
+    "copy-files": "mkdir -p dist && cp -r *.html styles js assets supabase netlify.toml package.json README.md dist/ || true",
+    "serve": "python -m http.server 8000 || npx serve .",
+    "dev": "npm run serve",
+    "deploy": "npm run build && netlify deploy --prod",
+    "preview": "npm run build && netlify deploy"
+  },
+  "keywords": [
+    "photography",
+    "ai",
+    "supabase",
+    "netlify",
+    "portfolio",
+    "photo-sharing"
+  ],
+  "author": "光影分享团队",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie <= 11"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/my-photo-site.git"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

@@ -1,0 +1,63 @@
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 构建输出
+dist/
+build/
+.output/
+.vercel/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE 配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+
+# 日志文件
+*.log
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# Supabase CLI 相关
+.supabase/
+
+# Netlify 相关
+.netlify/
+
+# 备份文件
+*.bak
+*.backup
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+# 文档生成的文件
+docs/build/
+
+# 本地配置文件
+config.local.js
+secrets.json

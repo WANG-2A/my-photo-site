@@ -1,0 +1,84 @@
+[build]
+  # 构建命令，由于是静态网站，只需要复制文件
+  command = "echo 'Building static site...' && mkdir -p dist && cp -r * dist/"
+  # 发布目录
+  publish = "dist"
+  # 环境变量
+  [build.environment]
+    NODE_VERSION = "18"
+
+# 重定向规则
+[[redirects]]
+  # 所有未找到的页面重定向到首页
+  from = "/*"
+  to = "/index.html"
+  status = 404
+
+[[redirects]]
+  # 确保SPA路由正常工作
+  from = "/upload"
+  to = "/upload.html"
+  status = 200
+
+[[redirects]]
+  from = "/ai-feedback"
+  to = "/ai-feedback.html"
+  status = 200
+
+# 头部设置
+[[headers]]
+  # 为所有静态资源设置缓存
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/styles/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.gif"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# 安全头部设置
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Supabase 环境变量（通过 Netlify 管理界面设置）
+[build.environment]
+  SUPABASE_URL = ""
+  SUPABASE_ANON_KEY = ""
+  AI_ANALYSIS_ENDPOINT = ""
+  AI_API_KEY = ""
+
+# 上下文特定配置
+[context.production]
+  [context.production.environment]
+    NODE_ENV = "production"
+
+[context.deploy-preview]
+  [context.deploy-preview.environment]
+    NODE_ENV = "development"

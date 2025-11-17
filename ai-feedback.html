@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI评价 - 光影分享</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-brand">
+                <h1>📷 光影分享</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="upload.html">上传作品</a></li>
+                <li><a href="ai-feedback.html" class="active">AI评价</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main">
+        <section class="ai-feedback-section">
+            <div class="ai-container">
+                <div class="ai-header">
+                    <h2>AI摄影助手</h2>
+                    <p>上传你的作品，获得专业AI的构图分析、技术评价和改进建议</p>
+                </div>
+
+                <div class="ai-content">
+                    <div class="upload-area">
+                        <div class="file-upload" id="aiFileUpload">
+                            <input type="file" id="aiPhotoFile" accept="image/*">
+                            <div class="file-upload-label">
+                                <span>🤖 上传照片获取AI评价</span>
+                                <small>支持 JPG, PNG 格式</small>
+                            </div>
+                        </div>
+                        <div class="image-preview" id="aiImagePreview" style="display: none;">
+                            <img id="aiPreviewImg" src="" alt="待评价图片">
+                            <button type="button" class="remove-btn" id="aiRemoveImage">✕</button>
+                        </div>
+                        <button class="analyze-btn" id="analyzeBtn" style="display: none;">开始分析</button>
+                    </div>
+
+                    <div class="ai-results" id="aiResults" style="display: none;">
+                        <div class="result-loading" id="resultLoading">
+                            <div class="spinner"></div>
+                            <p>AI正在分析你的作品...</p>
+                        </div>
+                        
+                        <div class="result-content" id="resultContent" style="display: none;">
+                            <div class="score-card">
+                                <h3>综合评分</h3>
+                                <div class="score-circle">
+                                    <span id="totalScore">--</span>
+                                </div>
+                                <div class="score-breakdown">
+                                    <div class="score-item">
+                                        <span>构图</span>
+                                        <div class="score-bar">
+                                            <div class="score-fill" id="compositionScore" style="width: 0%"></div>
+                                        </div>
+                                        <span id="compositionValue">--</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span>光线</span>
+                                        <div class="score-bar">
+                                            <div class="score-fill" id="lightingScore" style="width: 0%"></div>
+                                        </div>
+                                        <span id="lightingValue">--</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span>色彩</span>
+                                        <div class="score-bar">
+                                            <div class="score-fill" id="colorScore" style="width: 0%"></div>
+                                        </div>
+                                        <span id="colorValue">--</span>
+                                    </div>
+                                    <div class="score-item">
+                                        <span>创意</span>
+                                        <div class="score-bar">
+                                            <div class="score-fill" id="creativityScore" style="width: 0%"></div>
+                                        </div>
+                                        <span id="creativityValue">--</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-details">
+                                <div class="detail-section">
+                                    <h4>🎯 构图分析</h4>
+                                    <p id="compositionAnalysis"></p>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>💡 光线评价</h4>
+                                    <p id="lightingAnalysis"></p>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>🎨 色彩分析</h4>
+                                    <p id="colorAnalysis"></p>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>✨ 创意亮点</h4>
+                                    <p id="creativityAnalysis"></p>
+                                </div>
+                                
+                                <div class="detail-section">
+                                    <h4>📈 改进建议</h4>
+                                    <ul id="suggestions"></ul>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button class="save-btn" id="saveFeedback">保存评价</button>
+                                <button class="share-btn" id="shareFeedback">分享结果</button>
+                                <button class="reset-btn" id="resetAnalysis">重新分析</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tips-section">
+            <h3>摄影技巧分享</h3>
+            <div class="tips-grid" id="tipsGrid">
+                <div class="tip-card">
+                    <h4>📐 三分法则</h4>
+                    <p>将画面分成九宫格，把主体放在交叉点上，创造更平衡的构图。</p>
+                </div>
+                <div class="tip-card">
+                    <h4>🌅 黄金时刻</h4>
+                    <p>日出后和日落前的一小时，光线柔和温暖，最适合拍摄人像和风光。</p>
+                </div>
+                <div class="tip-card">
+                    <h4>📷 快门速度</h4>
+                    <p>用1/1000s以上凝固运动瞬间，用1/15s以下创造动态模糊效果。</p>
+                </div>
+                <div class="tip-card">
+                    <h4>🎯 引导线</h4>
+                    <p>利用道路、河流、建筑线条等引导观众视线，增强画面深度。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 光影分享. 让每个瞬间都值得记录</p>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/ai-feedback.js"></script>
+</body>
+</html>
