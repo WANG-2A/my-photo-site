@@ -52,17 +52,42 @@ class PhotoUploader {
     }
 
     handleFile(file) {
-        // 验证文件类型
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!allowedTypes.includes(file.type)) {
-            showNotification('请选择有效的图片文件（JPG、PNG、GIF）', 'error');
+        // 验证文件类型 - 支持常见图片格式和RAW格式
+        const allowedTypes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            // RAW 格式
+            'image/x-canon-cr2', 'image/x-canon-cr3',
+            'image/x-nikon-nef', 'image/x-sony-arw',
+            'image/x-fuji-raf', 'image/x-panasonic-rw2',
+            'image/x-raw', 'image/x-adobe-dng'
+        ];
+        
+        // 支持的文件扩展名（因为某些RAW文件的MIME类型可能不正确）
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', 
+                                  '.cr2', '.cr3', '.nef', '.arw', '.raf', 
+                                  '.rw2', '.raw', '.dng'];
+        
+        const fileName = file.name.toLowerCase();
+        const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+        const hasValidType = allowedTypes.includes(file.type);
+        
+        if (!hasValidType && !hasValidExtension) {
+            showNotification('请选择有效的图片文件（JPG、PNG、GIF、RAW格式）', 'error');
             return;
         }
 
-        // 验证文件大小
-        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        // 验证文件大小 - RAW文件允许更大
+        const fileName2 = file.name.toLowerCase();
+        const isRawFile2 = fileName2.endsWith('.cr3') || fileName2.endsWith('.cr2') || 
+                           fileName2.endsWith('.nef') || fileName2.endsWith('.arw') ||
+                           fileName2.endsWith('.raf') || fileName2.endsWith('.rw2') ||
+                           fileName2.endsWith('.raw') || fileName2.endsWith('.dng');
+        
+        const MAX_FILE_SIZE = isRawFile2 ? 50 * 1024 * 1024 : 10 * 1024 * 1024; // RAW: 50MB, 其他: 10MB
+        const maxSizeText = isRawFile2 ? '50MB' : '10MB';
+        
         if (file.size > MAX_FILE_SIZE) {
-            showNotification('文件大小不能超过 10MB', 'error');
+            showNotification(`${isRawFile2 ? 'RAW文件大小不能超过' : '文件大小不能超过'} ${maxSizeText}`, 'error');
             return;
         }
 
@@ -71,13 +96,46 @@ class PhotoUploader {
     }
 
     showPreview(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('previewImg').src = e.target.result;
-            document.getElementById('imagePreview').style.display = 'block';
+        const fileName = file.name.toLowerCase();
+        const isRawFile = fileName.endsWith('.cr3') || fileName.endsWith('.cr2') || 
+                          fileName.endsWith('.nef') || fileName.endsWith('.arw') ||
+                          fileName.endsWith('.raf') || fileName.endsWith('.rw2') ||
+                          fileName.endsWith('.raw') || fileName.endsWith('.dng');
+        
+        if (isRawFile) {
+            // RAW文件不显示预览，只显示文件名
+            document.getElementById('imagePreview').style.display = 'none';
             document.querySelector('.file-upload-label').style.display = 'none';
-        };
-        reader.readAsDataURL(file);
+            
+            // 创建RAW文件信息显示
+            const fileInfo = document.createElement('div');
+            fileInfo.id = 'rawFileInfo';
+            fileInfo.innerHTML = `
+                <div style="padding: 20px; border: 2px dashed #3b82f6; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📷</div>
+                    <div style="font-weight: bold; color: #3b82f6;">${file.name}</div>
+                    <div style="color: #666; font-size: 14px; margin-top: 5px;">
+                        RAW格式文件 • ${(file.size / 1024 / 1024).toFixed(1)}MB
+                    </div>
+                </div>
+            `;
+            
+            // 移除旧的RAW文件信息
+            const oldInfo = document.getElementById('rawFileInfo');
+            if (oldInfo) oldInfo.remove();
+            
+            // 插入新信息
+            document.querySelector('.upload-section').appendChild(fileInfo);
+        } else {
+            // 普通图片文件正常预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.querySelector('.file-upload-label').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     removeImage() {
@@ -201,13 +259,18 @@ class PhotoUploader {
 
     async saveToDatabase(data) {
         try {
+            console.log('准备保存的数据:', data); // 调试信息
+            
             const { error } = await supabase
-                .from(TABLES.PHOTOS)
+                .from('photos')  // 直接使用表名
                 .insert([data]);
 
             if (error) {
+                console.error('数据库错误详情:', error); // 详细错误信息
                 throw new Error(`保存数据失败: ${error.message}`);
             }
+
+            console.log('✅ 数据库保存成功'); // 成功信息
 
         } catch (error) {
             console.error('数据库保存错误:', error);

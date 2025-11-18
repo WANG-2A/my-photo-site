@@ -29,7 +29,7 @@ class PhotoGallery {
             
             // 从 Supabase 获取照片数据
             const { data: photos, error } = await supabase
-                .from(TABLES.PHOTOS)
+                .from('photos')
                 .select('*')
                 .order('created_at', { ascending: false })
                 .limit(20);
@@ -105,17 +105,66 @@ class PhotoGallery {
     }
 
     showPhotoDetail(photo) {
-        // 这里可以实现照片详情模态框
-        console.log('显示照片详情:', photo);
-        // 简单的实现：使用 alert 显示信息
-        const message = `
-标题: ${photo.title}
-分类: ${this.getCategoryName(photo.category)}
-描述: ${photo.description || '无'}
-拍摄地点: ${photo.location || '未知'}
-拍摄参数: ${this.getCameraInfo(photo)}
+        // 创建照片详情模态框
+        const modal = document.createElement('div');
+        modal.className = 'photo-modal';
+        
+        // 判断是否为 RAW 文件
+        const isRawFile = photo.image_url && (
+            photo.image_url.toLowerCase().endsWith('.cr3') || 
+            photo.image_url.toLowerCase().endsWith('.cr2') || 
+            photo.image_url.toLowerCase().endsWith('.nef') || 
+            photo.image_url.toLowerCase().endsWith('.arw') ||
+            photo.image_url.toLowerCase().endsWith('.raf') || 
+            photo.image_url.toLowerCase().endsWith('.rw2') ||
+            photo.image_url.toLowerCase().endsWith('.raw') || 
+            photo.image_url.toLowerCase().endsWith('.dng')
+        );
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <div class="modal-photo">
+                    ${isRawFile ? `
+                        <div class="raw-display">
+                            <div class="raw-icon">📷</div>
+                            <div class="raw-filename">${photo.image_url.split('/').pop()}</div>
+                            <div class="raw-label">RAW格式文件</div>
+                        </div>
+                    ` : `
+                        <img src="${photo.image_url}" alt="${photo.title}">
+                    `}
+                </div>
+                <div class="modal-info">
+                    <h2>${this.escapeHtml(photo.title)}</h2>
+                    <div class="modal-meta">
+                        <span class="photo-category">${this.getCategoryName(photo.category)}</span>
+                        <span class="photo-date">${this.formatDate(photo.created_at)}</span>
+                    </div>
+                    ${photo.description ? `<p class="photo-description">${this.escapeHtml(photo.description)}</p>` : ''}
+                    ${photo.location ? `<p class="photo-location">📍 ${this.escapeHtml(photo.location)}</p>` : ''}
+                    ${photo.camera_info ? `<p class="photo-camera">📷 ${this.getCameraInfo(photo)}</p>` : ''}
+                    <div class="modal-actions">
+                        <button class="delete-btn" onclick="window.photoGallery.deletePhoto('${photo.id}', '${photo.image_url || ''}')">
+                            🗑️ 删除照片
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
-        alert(message);
+        
+        document.body.appendChild(modal);
+        
+        // 关闭模态框事件
+        modal.querySelector('.modal-close').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
     }
 
     getCameraInfo(photo) {
@@ -166,6 +215,101 @@ class PhotoGallery {
         return div.innerHTML;
     }
 
+    async deletePhoto(photoId, imageUrl) {
+        // 确认删除
+        const confirmed = confirm('确定要删除这张照片吗？此操作不可恢复。');
+        if (!confirmed) return;
+        
+        try {
+            // 关闭模态框
+            const modal = document.querySelector('.photo-modal');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
+            
+            // 显示加载状态
+            this.showNotificationMessage('正在删除照片...', 'info');
+            
+            // 1. 删除数据库记录
+            const { error: dbError } = await supabase
+                .from('photos')
+                .delete()
+                .eq('id', photoId);
+            
+            if (dbError) {
+                throw new Error(`删除数据库记录失败: ${dbError.message}`);
+            }
+            
+            // 2. 尝试删除存储文件（如果有的话）
+            if (imageUrl) {
+                try {
+                    const filePath = imageUrl.split('/').pop();
+                    const fullFilePath = `photos/${filePath}`;
+                    
+                    const { error: storageError } = await supabase.storage
+                        .from('photos')
+                        .remove([fullFilePath]);
+                    
+                    if (storageError) {
+                        console.warn('删除存储文件失败:', storageError);
+                        // 不抛出错误，因为数据库记录已删除
+                    }
+                } catch (storageError) {
+                    console.warn('删除存储文件时出错:', storageError);
+                }
+            }
+            
+            // 3. 重新加载照片列表
+            await this.loadPhotos();
+            
+            this.showNotificationMessage('✅ 照片删除成功！', 'success');
+            
+        } catch (error) {
+            console.error('删除照片失败:', error);
+            this.showNotificationMessage(`❌ 删除失败: ${error.message}`, 'error');
+        }
+    }
+
+    showNotificationMessage(message, type = 'info') {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        // 添加样式
+        Object.assign(notification.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            color: 'white',
+            fontWeight: '500',
+            zIndex: '1000',
+            maxWidth: '300px',
+            wordWrap: 'break-word'
+        });
+        
+        // 根据类型设置背景色
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+        notification.style.backgroundColor = colors[type] || colors.info;
+        
+        // 添加到页面
+        document.body.appendChild(notification);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+
     showError(message) {
         const gallery = document.getElementById('photoGallery');
         gallery.innerHTML = `
@@ -179,7 +323,7 @@ class PhotoGallery {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    new PhotoGallery();
+    window.photoGallery = new PhotoGallery();
 });
 
 // 工具函数

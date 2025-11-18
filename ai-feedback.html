@@ -32,7 +32,7 @@
                 <div class="ai-content">
                     <div class="upload-area">
                         <div class="file-upload" id="aiFileUpload">
-                            <input type="file" id="aiPhotoFile" accept="image/*">
+                            <input type="file" id="aiPhotoFile" accept="image/*,.cr2,.cr3,.nef,.arw,.raf,.rw2,.raw,.dng">
                             <div class="file-upload-label">
                                 <span>🤖 上传照片获取AI评价</span>
                                 <small>支持 JPG, PNG 格式</small>
@@ -41,6 +41,20 @@
                         <div class="image-preview" id="aiImagePreview" style="display: none;">
                             <img id="aiPreviewImg" src="" alt="待评价图片">
                             <button type="button" class="remove-btn" id="aiRemoveImage">✕</button>
+                        </div>
+                        <div class="user-question-container" id="userQuestionContainer" style="display: none; margin-top: 1rem;">
+                            <label for="userQuestion" style="font-weight: 600; color: var(--dark-color); margin-bottom: 0.5rem; display: block;">
+                                📝 图片描述 <span style="color: #ef4444;">*</span>
+                            </label>
+                            <textarea 
+                                id="userQuestion" 
+                                placeholder="请描述你的照片内容，例如：这是一张日落时分的湖边风景照，使用了三分法构图..." 
+                                style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: var(--border-radius); resize: vertical; min-height: 100px; font-size: 0.9rem;"
+                                required
+                            ></textarea>
+                            <small style="color: #6b7280; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                                💡 提示：详细的描述能帮助AI更准确地分析你的作品
+                            </small>
                         </div>
                         <button class="analyze-btn" id="analyzeBtn" style="display: none;">开始分析</button>
                     </div>
@@ -113,6 +127,20 @@
                                 <div class="detail-section">
                                     <h4>📈 改进建议</h4>
                                     <ul id="suggestions"></ul>
+                                </div>
+                                
+                                <!-- 持续交流区域 -->
+                                <div class="detail-section">
+                                    <h4>💬 与 AI 持续交流</h4>
+                                    <div id="chatContainer" class="chat-container">
+                                        <div id="chatMessages" class="chat-messages">
+                                            <!-- 对话消息将显示在这里 -->
+                                        </div>
+                                        <div class="chat-input-container">
+                                            <input type="text" id="chatInput" placeholder="向 AI 询问更多关于这张照片的问题..." class="chat-input">
+                                            <button id="sendChatBtn" class="send-chat-btn">发送</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

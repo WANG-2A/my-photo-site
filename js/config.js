@@ -6,13 +6,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const { createClient } = window.supabase;
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// AI 分析配置
+// AI 分析配置 - Coze API（直接使用官方配置）
 const AI_CONFIG = {
-    // 这里可以配置 AI 服务的 API 端点
-    // 例如使用 OpenAI、Claude 或其他 AI 服务
-    ANALYSIS_ENDPOINT: 'YOUR_AI_ANALYSIS_ENDPOINT',
-    API_KEY: 'YOUR_AI_API_KEY'
+    // Coze API 配置
+    ENDPOINT: 'https://api.coze.cn/v1/workflow/run',
+    API_KEY: 'cztei_hUqrfD57GSookGCso20XsQI8UThFnm637fRiyB3nUOCpzukez8ZN6gpJuCclpvu3W', // 官方文档中的API Key
+    WORKFLOW_ID: '7573872754996019236',
+    MODEL: '豆包·1.6·视觉理解-250815',
+    MAX_TOKENS: 4096,
+    TEMPERATURE: 0.8,
+    
+    // 图床配置（临时存储图片）
+    IMAGE_HOST: {
+        ENDPOINT: 'https://api.freeimage.host/api/1/upload',
+        API_KEY: '6d207e0e98b18ae47494dc2dd5b54f89' // 免费图床API
+    }
 };
+
+
 
 // 文件上传配置
 const UPLOAD_CONFIG = {
