@@ -1,26 +1,28 @@
-// Supabase 配置
-const SUPABASE_URL = 'https://umawkuvbaelmfdhyxdrh.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtYXdrdXZiYWVsbWZkaHl4ZHJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNzEzNTIsImV4cCI6MjA3ODk0NzM1Mn0.LryZ7CwRienrl5c5QWJR7AeClEqAbeRQDtT9TlzRrdY';
+// Supabase 配置 (如果库可用则加载)
+let supabase = null;
+try {
+    if (typeof window.supabase !== 'undefined') {
+        const { createClient } = window.supabase;
+        const SUPABASE_URL = 'https://umawkuvbaelmfdhyxdrh.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtYXdrdXZiYWVsbWZkaHl4ZHJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzNzEzNTIsImV4cCI6MjA3ODk0NzM1Mn0.LryZ7CwRienrl5c5QWJR7AeClEqAbeRQDtT9TlzRrdY';
+        supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase 客户端初始化成功');
+    } else {
+        console.warn('Supabase 库未加载，跳过初始化');
+    }
+} catch (error) {
+    console.warn('Supabase 初始化失败:', error);
+}
 
-// 初始化 Supabase 客户端
-const { createClient } = window.supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// AI 分析配置 - Coze API（直接使用官方配置）
+// AI 分析配置 - Coze 智能体API
 const AI_CONFIG = {
     // Coze API 配置
-    ENDPOINT: 'https://api.coze.cn/v1/workflow/run',
-    API_KEY: 'cztei_hUqrfD57GSookGCso20XsQI8UThFnm637fRiyB3nUOCpzukez8ZN6gpJuCclpvu3W', // 官方文档中的API Key
-    WORKFLOW_ID: '7573872754996019236',
-    MODEL: '豆包·1.6·视觉理解-250815',
+    ENDPOINT: 'https://api.coze.cn/v3/chat',
+    UPLOAD_ENDPOINT: 'https://api.coze.cn/v1/files/upload',
+    API_KEY: 'pat_XhFmeFHnMu4mKkTQoohcleaFJeg2w8JVz0xdQxyNgkglqUYM5ZQatoytSnevQrk0', // 新的secret token
+    BOT_ID: '7574726069233319951', // 智能体ID
     MAX_TOKENS: 4096,
-    TEMPERATURE: 0.8,
-    
-    // 图床配置（临时存储图片）
-    IMAGE_HOST: {
-        ENDPOINT: 'https://api.freeimage.host/api/1/upload',
-        API_KEY: '6d207e0e98b18ae47494dc2dd5b54f89' // 免费图床API
-    }
+    TEMPERATURE: 0.8
 };
 
 

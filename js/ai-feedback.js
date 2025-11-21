@@ -48,6 +48,12 @@ class AIFeedback {
 
         // 开始分析
         analyzeBtn.addEventListener('click', () => this.startAnalysis());
+        
+        // 打开AI助手界面
+        const openBotBtn = document.getElementById('openBotBtn');
+        if (openBotBtn) {
+            openBotBtn.addEventListener('click', () => this.toggleBotInterface());
+        }
 
         // 保存评价
         saveBtn.addEventListener('click', () => this.saveFeedback());
@@ -194,14 +200,11 @@ class AIFeedback {
             resultLoading.style.display = 'block';
             resultContent.style.display = 'none';
 
-            // 调试：先验证token
+            // 调试：显示配置信息
             console.log('使用的API Token:', window.APP_CONFIG.AI_CONFIG.API_KEY);
-            console.log('使用的Workflow ID:', window.APP_CONFIG.AI_CONFIG.WORKFLOW_ID);
+            console.log('使用的智能体ID:', window.APP_CONFIG.AI_CONFIG.BOT_ID);
 
-            // 先测试基本的API认证
-            await this.testCozeAuth();
-
-            // 使用 Coze 工作流进行AI分析
+            // 使用 Coze 智能体进行AI分析
             const analysis = await this.analyzeWithCoze();
             
             // 保存分析结果
@@ -570,7 +573,7 @@ class AIFeedback {
             const conversationContext = this.conversationHistory
                 .slice(-6) // 只保留最近3轮对话
                 .map(item => `${item.sender}: ${item.message}`)
-                .join('\n');
+                .join('');
             
             const analysisContext = `
 当前照片分析结果：
@@ -640,6 +643,44 @@ ${conversationContext}
         return div.innerHTML;
     }
 
+    toggleBotInterface() {
+        const botContainer = document.getElementById('botContainer');
+        const openBotBtn = document.getElementById('openBotBtn');
+        const botFrame = document.getElementById('botFrame');
+        const botLoading = document.getElementById('botLoading');
+        const aiResults = document.getElementById('aiResults');
+        
+        if (botContainer.style.display === 'none' || botContainer.style.display === '') {
+            // 打开智能体界面
+            botContainer.style.display = 'block';
+            openBotBtn.style.display = 'none';
+            
+            // 显示加载状态
+            botLoading.style.display = 'block';
+            
+            // iframe 加载完成后隐藏loading
+            if (botFrame) {
+                botFrame.onload = () => {
+                    botLoading.style.display = 'none';
+                };
+            }
+            
+            // 隐藏AI分析结果
+            if (aiResults) {
+                aiResults.style.display = 'none';
+            }
+        } else {
+            // 关闭智能体界面
+            botContainer.style.display = 'none';
+            openBotBtn.style.display = 'block';
+            
+            // 显示AI分析结果（如果有的话）
+            if (aiResults && this.currentAnalysis) {
+                aiResults.style.display = 'block';
+            }
+        }
+    }
+
     async uploadToImageHost(file) {
         // 直接返回 base64，跳过图床
         console.log('直接使用base64方案');
@@ -648,196 +689,277 @@ ${conversationContext}
 
     async analyzeWithCoze() {
         try {
-            // 1. 获取图片URL或base64
-            let imageData;
-            try {
-                imageData = await this.uploadToImageHost(this.currentFile);
-            } catch (error) {
-                console.warn('图床上传失败，使用base64:', error);
-                imageData = await this.fileToBase64(this.currentFile);
-            }
-            
-            // 2. 获取用户的图片描述
+            // 1. 获取用户的图片描述
             const userQuestion = document.getElementById('userQuestion').value.trim();
-            
-            // 3. 调用 Coze 工作流API
-            console.log('调用Coze工作流API...');
-            
-            // 先尝试上传文件获取file_id
-            const fileId = await this.uploadImageToCoze(imageData);
-            
-            let requestBody;
-            if (fileId) {
-                // 使用file_id格式，按照官方文档要求
-                requestBody = {
-                    workflow_id: window.APP_CONFIG.AI_CONFIG.WORKFLOW_ID,
-                    parameters: {
-                        image: `{"file_id":"${fileId}"}`,
-                        user_request: userQuestion
-                    }
-                };
-            } else {
-                // 回退到直接使用完整的base64图片数据（包含data URL前缀）
-                // 这样工作流可以正确识别图片格式
-                requestBody = {
-                    workflow_id: window.APP_CONFIG.AI_CONFIG.WORKFLOW_ID,
-                    parameters: {
-                        image: imageData, // 使用完整的data URL格式
-                        user_request: userQuestion
-                    }
-                };
+            if (!this.currentFile) {
+                throw new Error('请先选择要分析的照片');
             }
 
-            console.log('请求体:', requestBody);
+            console.log('开始智能体分析...');
+            console.log('使用智能体ID:', window.APP_CONFIG.AI_CONFIG.BOT_ID);
 
+            // 2. 上传图片到Coze获取image_id
+            const imageId = await this.uploadImageToBot();
+            if (!imageId) {
+                throw new Error('图片上传失败');
+            }
+
+            console.log('图片上传成功，image_id:', imageId);
+
+            // 3. 调用智能体API（流式处理 SSE 响应）
+            console.log('开始调用智能体API...');
+            
             const response = await fetch(window.APP_CONFIG.AI_CONFIG.ENDPOINT, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Authorization': `Bearer ${window.APP_CONFIG.AI_CONFIG.API_KEY}`,
-                    'Content-Type': 'application/json'
+                    "Authorization": `Bearer ${window.APP_CONFIG.AI_CONFIG.API_KEY}`,
+                    "Content-Type": "application/json"
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({
+                    bot_id: window.APP_CONFIG.AI_CONFIG.BOT_ID,
+                    user_id: `user_${Date.now()}`, // 动态生成用户 ID，避免冲突
+                    stream: true,
+                    auto_save_history: false,
+                    messages: [ // 注意：这里用 messages 而非 additional_messages（Coze 标准参数）
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: userQuestion || "分析这张摄影作品的构图、光线、色彩、主体，并给出3条改进建议" },
+                                { 
+                                    type: "image", 
+                                    image_info: { 
+                                        image_id: imageId,
+                                        image_type: "photo"
+                                    } 
+                                }
+                            ]
+                        }
+                    ],
+                    // 额外配置：强制智能体按提示词格式输出
+                    response_format: {
+                        type: "json_object" // 告知智能体输出 JSON 格式
+                    }
+                })
             });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Coze API 错误响应:', errorText);
-                throw new Error(`Coze API 错误: ${response.status} - ${errorText}`);
+                console.error('智能体API 错误响应:', errorText);
+                throw new Error(`智能体API 错误: ${response.status} - ${errorText}`);
             }
 
-            const data = await response.json();
-            console.log('Coze 响应数据:', data);
+            // 4. 处理流式响应 - 修改为直接解析完整 JSON
+            return new Promise((resolve, reject) => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let fullJsonStr = ""; // 拼接完整的 JSON 字符串
+                let errorMsg = "";
+
+                reader.read().then(function processChunk({ done, value }) {
+                    if (done) {
+                        if (errorMsg) {
+                            reject(new Error(errorMsg));
+                        } else {
+                            try {
+                                // 解析完整 JSON 字符串
+                                const result = JSON.parse(fullJsonStr);
+                                console.log('智能体完整JSON结果:', result);
+                                
+                                // 构造标准响应数据结构
+                                const data = {
+                                    data: {
+                                        answer: result
+                                    }
+                                };
+                                resolve(data);
+                            } catch (e) {
+                                reject(new Error(`JSON 解析失败: ${e.message}`));
+                            }
+                        }
+                        return;
+                    }
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split("\n").filter(line => line.trim() !== "");
+
+                    for (const line of lines) {
+                        if (line.startsWith("data: ")) {
+                            const dataStr = line.slice(6);
+                            if (dataStr === "[DONE]") continue;
+
+                            try {
+                                const data = JSON.parse(dataStr);
+                                // Coze 智能体流式响应的核心内容在 data.choices[0].delta.content
+                                if (data.choices && data.choices[0].delta.content) {
+                                    fullJsonStr += data.choices[0].delta.content;
+                                    console.log('添加流式内容:', data.choices[0].delta.content);
+                                }
+                            } catch (e) {
+                                console.warn("单块数据解析警告:", e);
+                            }
+                        } else if (line.startsWith("event: error")) {
+                            errorMsg = `API 错误: ${line.slice(13)}`;
+                        }
+                    }
+
+                    return reader.read().then(processChunk);
+                }).catch(err => {
+                    reject(new Error(`流式读取失败: ${err.message}`));
+                });
+            });
             
-            // 更灵活的响应格式检查
-            let analysisText;
-            if (data.data && data.data.outputs) {
-                analysisText = data.data.outputs.output || data.data.outputs.result || JSON.stringify(data.data.outputs);
-            } else if (data.output) {
-                analysisText = data.output;
-            } else if (data.result) {
-                analysisText = data.result;
-            } else {
-                // 尝试从任何可能的位置获取结果
-                analysisText = JSON.stringify(data);
-                console.warn('无法从标准位置获取结果，使用完整响应数据');
+            // 添加响应结构调试
+            if (typeof window.debugResponse === 'function') {
+                window.debugResponse(data);
             }
-            console.log('Coze分析结果:', analysisText);
+
+            // 4. 解析智能体返回的分析结果
+            let analysisText = '';
             
-            // 尝试解析 JSON 结果
-            let analysis;
-            try {
-                // 尝试从分析文本中提取 JSON
-                const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    analysis = JSON.parse(jsonMatch[0]);
-                } else {
-                    // 如果没有 JSON，创建基本结构
-                    analysis = {
-                        totalScore: 80,
-                        composition: { 
-                            score: 80, 
-                            analysis: "Coze AI 分析完成。构图布局合理，主体突出。" 
-                        },
-                        lighting: { 
-                            score: 80, 
-                            analysis: "光线运用得当，曝光准确。" 
-                        },
-                        color: { 
-                            score: 80, 
-                            analysis: "色彩搭配和谐，色调统一。" 
-                        },
-                        creativity: { 
-                            score: 80, 
-                            analysis: "创意表现良好，有独特视角。" 
-                        },
-                        suggestions: [
-                            "可以尝试不同的拍摄角度",
-                            "注意光线的选择和运用",
-                            "加强构图的设计感"
-                        ]
-                    };
+            console.log('完整的智能体响应:', data);
+            
+            // 尝试多种可能的响应格式
+            if (data.data) {
+                // 格式1: data.data.answer
+                if (data.data.answer) {
+                    analysisText = data.data.answer;
                 }
-            } catch (parseError) {
-                console.error('JSON 解析失败:', parseError);
-                console.log('原始分析文本:', analysisText);
-                
-                // 如果解析失败，创建一个基本的结构
-                analysis = {
-                    totalScore: 75,
-                    composition: { score: 75, analysis: "AI分析遇到了技术问题，请稍后重试。" },
-                    lighting: { score: 75, analysis: "AI分析遇到了技术问题，请稍后重试。" },
-                    color: { score: 75, analysis: "AI分析遇到了技术问题，请稍后重试。" },
-                    creativity: { score: 75, analysis: "AI分析遇到了技术问题，请稍后重试。" },
-                    suggestions: ["请稍后重试分析", "检查网络连接", "确保图片格式正确"]
-                };
+                // 格式2: data.data.messages[0].content
+                else if (data.data.messages && data.data.messages.length > 0 && data.data.messages[0].content) {
+                    analysisText = data.data.messages[0].content;
+                }
+                // 格式3: data.data.messages[0].content.text
+                else if (data.data.messages && data.data.messages.length > 0 && data.data.messages[0].content && data.data.messages[0].content.text) {
+                    analysisText = data.data.messages[0].content.text;
+                }
+                // 格式4: data.data.messages[0].text
+                else if (data.data.messages && data.data.messages.length > 0 && data.data.messages[0].text) {
+                    analysisText = data.data.messages[0].text;
+                }
+                // 格式5: 整个data对象转换为字符串
+                else {
+                    analysisText = JSON.stringify(data.data);
+                    console.warn('使用备用格式解析响应');
+                }
+            } else {
+                analysisText = JSON.stringify(data);
+                console.warn('使用完整响应作为分析文本');
+            }
+            
+            if (!analysisText) {
+                throw new Error('无法解析智能体响应');
             }
 
+            console.log('智能体分析结果:', analysisText);
+
+            // 5. 解析为标准分析格式
+            const analysis = this.parseAnalysisResult(analysisText);
             return analysis;
 
         } catch (error) {
-            console.error('Coze API 调用失败:', error);
+            console.error('智能体API 调用失败:', error);
             throw new Error(`AI分析失败: ${error.message}`);
         }
     }
 
-    async testCozeAuth() {
+
+
+    parseAnalysisResult(analysisText) {
+        // 尝试从智能体分析文本中提取结构化信息
         try {
-            console.log('测试Coze API认证...');
-            const testResponse = await fetch('https://api.coze.cn/v1/workflow/list', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${window.APP_CONFIG.AI_CONFIG.API_KEY}`,
-                    'Content-Type': 'application/json'
+            // 尝试从分析文本中提取评分信息
+            let totalScore = 80;
+            let composition = { score: 80, analysis: "" };
+            let lighting = { score: 80, analysis: "" };
+            let color = { score: 80, analysis: "" };
+            let creativity = { score: 80, analysis: "" };
+            let suggestions = [];
+
+            // 使用正则表达式提取分数
+            const scoreMatches = analysisText.match(/(\d+)[分分]/g);
+            if (scoreMatches && scoreMatches.length > 0) {
+                totalScore = Math.min(100, Math.max(60, parseInt(scoreMatches[0])));
+            }
+
+            // 按行分割分析文本
+            const lines = analysisText.split('').filter(line => line.trim());
+            
+            // 分类提取分析内容
+            lines.forEach(line => {
+                if (line.includes('构图') || line.includes('布局')) {
+                    composition.analysis += line + " ";
+                } else if (line.includes('光线') || line.includes('曝光') || line.includes('光')) {
+                    lighting.analysis += line + " ";
+                } else if (line.includes('色彩') || line.includes('颜色') || line.includes('色调')) {
+                    color.analysis += line + " ";
+                } else if (line.includes('创意') || line.includes('独特') || line.includes('视角')) {
+                    creativity.analysis += line + " ";
+                } else if (line.includes('建议') || line.includes('可以') || line.includes('应该')) {
+                    suggestions.push(line.trim());
                 }
             });
-            
-            console.log('认证测试响应状态:', testResponse.status);
-            if (testResponse.ok) {
-                const testData = await testResponse.json();
-                console.log('认证测试成功:', testData);
-            } else {
-                const errorText = await testResponse.text();
-                console.error('认证测试失败:', errorText);
-                throw new Error(`Coze API认证失败: ${testResponse.status} - ${errorText}`);
+
+            // 如果某个分类没有分析内容，使用默认值
+            if (!composition.analysis) composition.analysis = "构图布局基本合理，主体突出。";
+            if (!lighting.analysis) lighting.analysis = "光线运用得当，曝光基本准确。";
+            if (!color.analysis) color.analysis = "色彩搭配和谐，色调统一。";
+            if (!creativity.analysis) creativity.analysis = "创意表现良好，有一定视角特色。";
+            if (suggestions.length === 0) {
+                suggestions = ["可以尝试不同的拍摄角度", "注意光线的选择和运用", "加强构图的设计感"];
             }
+
+            return {
+                totalScore,
+                composition: { ...composition, score: totalScore },
+                lighting: { ...lighting, score: totalScore },
+                color: { ...color, score: totalScore },
+                creativity: { ...creativity, score: totalScore },
+                suggestions: suggestions.slice(0, 5) // 最多5个建议
+            };
+
         } catch (error) {
-            console.error('Coze API认证测试错误:', error);
-            // 不抛出错误，继续尝试主要分析
+            console.error('解析分析结果失败:', error);
+            
+            // 返回默认分析结果
+            return {
+                totalScore: 80,
+                composition: { score: 80, analysis: "智能体分析完成。构图布局合理，主体突出。" },
+                lighting: { score: 80, analysis: "光线运用得当，曝光准确。" },
+                color: { score: 80, analysis: "色彩搭配和谐，色调统一。" },
+                creativity: { score: 80, analysis: "创意表现良好，有独特视角。" },
+                suggestions: ["可以尝试不同的拍摄角度", "注意光线的选择和运用", "加强构图的设计感"]
+            };
         }
     }
 
-    async uploadImageToCoze(imageData) {
+    async uploadImageToBot() {
         try {
-            // 更简单的方法：直接使用原始文件
-            if (this.currentFile) {
-                const formData = new FormData();
-                formData.append('file', this.currentFile);
-                
-                // 上传文件到Coze
-                const uploadResponse = await fetch('https://api.coze.cn/v1/files/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${window.APP_CONFIG.AI_CONFIG.API_KEY}`
-                    },
-                    body: formData
-                });
-                
-                if (!uploadResponse.ok) {
-                    console.error('文件上传失败:', uploadResponse.status);
-                    return null;
-                }
-                
-                const uploadResult = await uploadResponse.json();
-                console.log('文件上传成功:', uploadResult);
-                
-                if (uploadResult.data && uploadResult.data.id) {
-                    return uploadResult.data.id;
-                } else {
-                    console.error('文件上传响应格式错误:', uploadResult);
-                    return null;
-                }
+            // 上传图片到Coze获取file_id
+            const formData = new FormData();
+            formData.append('file', this.currentFile);
+            
+            const uploadResponse = await fetch(window.APP_CONFIG.AI_CONFIG.UPLOAD_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${window.APP_CONFIG.AI_CONFIG.API_KEY}`
+                    // 不设置Content-Type，让浏览器自动设置multipart/form-data
+                },
+                body: formData
+            });
+            
+            if (!uploadResponse.ok) {
+                const errorText = await uploadResponse.text();
+                console.error('文件上传失败:', uploadResponse.status, errorText);
+                return null;
+            }
+            
+            const uploadResult = await uploadResponse.json();
+            console.log('文件上传成功:', uploadResult);
+            
+            if (uploadResult.data && uploadResult.data.id) {
+                return uploadResult.data.id;
             } else {
-                console.error('没有原始文件可以上传');
+                console.error('文件上传响应格式错误:', uploadResult);
                 return null;
             }
             

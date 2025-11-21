@@ -27,6 +27,12 @@
                 <div class="ai-header">
                     <h2>AI摄影助手</h2>
                     <p>上传你的作品，获得专业AI的构图分析、技术评价和改进建议</p>
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: var(--border-radius); border-left: 4px solid #3b82f6;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #3b82f6;">💡 更好的选择</h4>
+                        <p style="margin: 0; color: #1f2937; font-size: 0.9rem;">
+                            推荐直接与AI助手对话，获得更详细、更个性化的摄影建议，包括技术参数调整和后期处理技巧。
+                        </p>
+                    </div>
                 </div>
 
                 <div class="ai-content">
@@ -56,7 +62,35 @@
                                 💡 提示：详细的描述能帮助AI更准确地分析你的作品
                             </small>
                         </div>
-                        <button class="analyze-btn" id="analyzeBtn" style="display: none;">开始分析</button>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                            <button class="analyze-btn" id="analyzeBtn" style="display: none; flex: 1;">开始AI分析</button>
+                            <button class="chat-bot-btn" id="openBotBtn" style="flex: 1; width: 100%; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: var(--border-radius); font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                                🤖 打开AI摄影助手
+                            </button>
+                        </div>
+                        
+                        <!-- 嵌入式智能体界面 -->
+                        <div id="botContainer" style="display: none; margin-top: 2rem;">
+                            <div style="background: white; border-radius: var(--border-radius); box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                                    <h3 style="margin: 0; color: var(--dark-color); font-size: 1.2rem;">🤖 AI摄影助手</h3>
+                                    <button id="closeBotBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; padding: 0.25rem; border-radius: 4px; transition: all 0.3s ease;">✕</button>
+                                </div>
+                                <div style="height: 600px; position: relative;">
+                                    <iframe 
+                                        id="botFrame"
+                                        src="https://www.coze.cn/store/agent/7574736515671212073?from=store_search_suggestion&bid=6i80vp71k8018&embed=true"
+                                        style="width: 100%; height: 100%; border: none; border-radius: 0 0 var(--border-radius) var(--border-radius);"
+                                        frameborder="0">
+                                    </iframe>
+                                    <div id="botLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                        <div class="spinner"></div>
+                                        <p style="margin-top: 1rem; color: #6b7280;">AI助手加载中...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="ai-results" id="aiResults" style="display: none;">
@@ -183,6 +217,7 @@
     </footer>
 
     <script src="js/config.js"></script>
+    <script src="debug-response.js"></script>
     <script src="js/ai-feedback.js"></script>
 </body>
 </html>

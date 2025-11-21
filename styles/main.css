@@ -874,3 +874,34 @@ body {
         padding: 1rem;
     }
 }
+
+/* AI助手按钮样式 */
+.chat-bot-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* 嵌入式智能体界面样式 */
+#botContainer {
+    transition: all 0.3s ease;
+}
+
+#botContainer .spinner {
+    margin-top: 2rem;
+}
+
+#closeBotBtn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* 在移动设备上优化智能体界面 */
+@media (max-width: 768px) {
+    #botContainer {
+        margin-top: 1rem;
+    }
+    
+    #botContainer iframe {
+        height: 500px;
+    }
+}
